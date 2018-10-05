@@ -1,5 +1,6 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, ElementRef, Input, OnInit, ViewChild} from '@angular/core';
 import {Participant} from "../../shared/participant";
+import {RoomService} from "../../shared/room.service";
 
 @Component({
   selector: 'app-participant-media',
@@ -10,9 +11,17 @@ export class ParticipantMediaComponent implements OnInit {
 
   @Input() participant: Participant;
 
-  constructor() { }
+  @ViewChild('mediaElement') mediaElement: ElementRef;
+
+  constructor(private roomService: RoomService) {
+  }
 
   ngOnInit() {
+
+    if (this.participant.name == this.roomService.myInfo.name) {
+      console.log('\n\nMy Name: {}', this.roomService.myInfo.name);
+      this.roomService.setMyStream(this.mediaElement.nativeElement)
+    }
   }
 
 }
