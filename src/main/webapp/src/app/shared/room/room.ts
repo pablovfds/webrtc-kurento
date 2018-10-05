@@ -1,4 +1,4 @@
-import {Participant} from "./participant";
+import {Participant} from "../participant/participant";
 
 export class Room {
   private _name: string;

@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 
 import { Room } from './room';
-import { Subject, Observable } from 'rxjs';
+import {Subject, Observable} from 'rxjs';
 
 import { WebRtcPeer } from 'kurento-utils';
-import {Participant} from "./participant";
-import {ParticipantMedia} from "./participant-media";
+import {Participant} from "../participant/participant";
+import {ParticipantMedia} from "../participant/participant-media";
 
 @Injectable({
   providedIn: 'root'
@@ -28,39 +28,6 @@ export class RoomService {
     this._participantsList$ = new Subject<Participant[]>();
     this._myInfo$ = new Subject<Participant>();
     this._participantsMedia = [];
-  }
-
-  private initSocket() {
-    this.ws = new WebSocket('wss://localhost:8443/groupcall');
-
-    this.ws.onopen = (event) => {
-      console.log(event);
-      console.log('Connected');
-    };
-
-    this.ws.onmessage = (message) => {
-      const parsedMessage = JSON.parse(message.data);
-      console.log('Received message: ' + message.data);
-
-      switch (parsedMessage.id) {
-        case 'existingParticipants':
-          this.onExistingParticipants(parsedMessage);
-          break;
-
-        case 'receiveVideoAnswer':
-          this.receiveVideoResponse(parsedMessage);
-          break;
-
-        case 'iceCandidate':
-          this.addIceCandidate(parsedMessage);
-          break;
-        case 'newParticipantArrived':
-          this.onNewParticipant(parsedMessage);
-          break;
-        default:
-          break;
-      }
-    };
   }
 
   register(name, room) {
@@ -142,23 +109,58 @@ export class RoomService {
     this.ws.send(jsonMessage);
   }
 
-  public get participantsList$(): Observable<Participant[]> {
+  get participantsList$(): Observable<Participant[]> {
     return this._participantsList$.asObservable();
   }
 
-  public get myInfo(): Participant {
+  get myInfo(): Participant {
     return this._me;
   }
 
+  private initSocket() {
+    this.ws = new WebSocket('wss://localhost:8443/groupcall');
+
+    this.ws.onopen = (event) => {
+      console.log(event);
+      console.log('Connected');
+    };
+
+    this.ws.onmessage = (message) => {
+      const parsedMessage = JSON.parse(message.data);
+      console.log('Received message: ' + message.data);
+
+      switch (parsedMessage.id) {
+        case 'existingParticipants':
+          this.onExistingParticipants(parsedMessage);
+          break;
+
+        case 'receiveVideoAnswer':
+          this.receiveVideoResponse(parsedMessage);
+          break;
+
+        case 'iceCandidate':
+          this.addIceCandidate(parsedMessage);
+          break;
+        case 'newParticipantArrived':
+          this.onNewParticipant(parsedMessage);
+          break;
+        default:
+          break;
+      }
+    };
+  }
 
   private onExistingParticipants(msg) {
     console.log('\n\nonExistingParticipants');
     console.log(this._me.name + ' registered in room ' + this._room.name);
+
     this._me.isPresenter = msg.isPresenter;
+
     msg.data.forEach((element) => {
       const participant = new Participant(element.name, element.isPresenter);
       this._room.participants.push(participant);
     });
+
     this._room.participants.push(this._me);
 
     this._participantsList$.next(this._room.participants);
@@ -207,13 +209,8 @@ export class RoomService {
   }
 
   private getParticipantMedia(name: string): ParticipantMedia {
-
-    for (let index = 0; index < this._participantsMedia.length; index++) {
-      const element = this._participantsMedia[index];
-
-      if (element.id === name) {
-        return element;
-      }
+    for (let participantMedia of this._participantsMedia) {
+      if (participantMedia.id === name) return participantMedia;
     }
     return null;
   }

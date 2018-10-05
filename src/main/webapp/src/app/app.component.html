@@ -1,5 +1,5 @@
 <!--The content below is only a placeholder and can be replaced.-->
-<app-join-room-form *ngIf="!submmited"></app-join-room-form>
+<app-join-room-form *ngIf="!submitted"></app-join-room-form>
 
 <div *ngFor="let participant of participantsList" >
   <app-participant-media *ngIf="participant.isPresenter"  [participant]="participant"></app-participant-media>

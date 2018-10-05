@@ -1,6 +1,6 @@
 import {Component, ElementRef, Input, OnInit, ViewChild} from '@angular/core';
-import {Participant} from "../../shared/participant";
-import {RoomService} from "../../shared/room.service";
+import {Participant} from "../../shared/participant/participant";
+import {RoomService} from "../../shared/room/room.service";
 
 @Component({
   selector: 'app-participant-media',

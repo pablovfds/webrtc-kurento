@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {RoomService} from "../../shared/room.service";
+import {RoomService} from "../../shared/room/room.service";
 
 @Component({
   selector: 'app-join-room-form',

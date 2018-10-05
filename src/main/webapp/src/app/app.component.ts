@@ -1,7 +1,7 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {Participant} from "./shared/participant";
-import {RoomService} from "./shared/room.service";
-import {Subscription} from "rxjs";
+import {Participant} from './shared/participant/participant';
+import {RoomService} from './shared/room/room.service';
+import {Subscription} from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -10,7 +10,7 @@ import {Subscription} from "rxjs";
 })
 export class AppComponent implements OnInit, OnDestroy {
 
-  submmited = false;
+  submitted = false;
 
   participantsListSubscription: Subscription;
   participantsList: Participant[];
@@ -23,7 +23,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.participantsListSubscription = this.roomService
       .participantsList$.subscribe((participants) => {
         this.participantsList = participants;
-        this.submmited = true;
+        this.submitted = true;
       });
   }
 
