@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import {RoomService} from "../../shared/room.service";
 
 @Component({
   selector: 'app-join-room-form',
@@ -12,13 +13,14 @@ export class JoinRoomFormComponent implements OnInit {
     roomName: ''
   }
 
-  constructor() { }
+  constructor(private roomService: RoomService) { }
 
   ngOnInit() {
   }
 
   onSubmit() {
     console.log(this.model)
+    this.roomService.register(this.model.name, this.model.roomName);
   }
 
 }

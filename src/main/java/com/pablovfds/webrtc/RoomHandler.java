@@ -29,7 +29,7 @@ public class RoomHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         final JsonObject jsonMessage = gson.fromJson(message.getPayload(), JsonObject.class);
 
-        String action = jsonMessage.get("action").getAsString();
+        String action = jsonMessage.get("id").getAsString();
 
         final UserSession user = registry.getBySession(session);
 
