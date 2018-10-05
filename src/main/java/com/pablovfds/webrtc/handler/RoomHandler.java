@@ -1,8 +1,12 @@
-package com.pablovfds.webrtc;
+package com.pablovfds.webrtc.handler;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.pablovfds.webrtc.Room;
+import com.pablovfds.webrtc.RoomManager;
+import com.pablovfds.webrtc.UserRegistry;
+import com.pablovfds.webrtc.UserSession;
 import org.kurento.client.IceCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
