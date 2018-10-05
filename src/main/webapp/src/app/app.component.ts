@@ -12,12 +12,16 @@ export class AppComponent implements OnInit{
   participants: Participant[];
 
   participantsListSubscription: Subscription;
+  submmited: boolean = false;
 
-  constructor(private roomService: RoomService) {}
+  constructor(private roomService: RoomService) {
+    this.participants = [];
+  }
 
   ngOnInit(): void {
     this.participantsListSubscription = this.roomService.participantsList$.subscribe((participants) => {
       this.participants = participants;
+      this.submmited = true;
     })
   }
 }

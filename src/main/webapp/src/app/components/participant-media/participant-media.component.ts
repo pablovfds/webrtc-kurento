@@ -21,6 +21,9 @@ export class ParticipantMediaComponent implements OnInit {
     if (this.participant.name == this.roomService.myInfo.name) {
       console.log('\n\nMy Name: {}', this.roomService.myInfo.name);
       this.roomService.setMyStream(this.mediaElement.nativeElement)
+    } else {
+      console.log('\n\nParticipantName: {}', this.participant.name);
+      this.roomService.setParticipantStream(this.participant, this.mediaElement.nativeElement);
     }
   }
 
