@@ -13,16 +13,14 @@ export class ParticipantMediaComponent implements OnInit {
 
   @ViewChild('mediaElement') mediaElement: ElementRef;
 
-  constructor(private roomService: RoomService) {
-  }
+  constructor(private roomService: RoomService) {}
 
   ngOnInit() {
-
-    if (this.participant.name == this.roomService.myInfo.name) {
-      console.log('\n\nMy Name: {}', this.roomService.myInfo.name);
-      this.roomService.setMyStream(this.mediaElement.nativeElement)
+    if (this.roomService.myInfo.name === this.participant.name) {
+      console.log('\n\nMy Name: {} - isPresenter: {}', this.roomService.myInfo.name, this.roomService.myInfo.isPresenter);
+      this.roomService.setMyStream(this.mediaElement.nativeElement);
     } else {
-      console.log('\n\nParticipantName: {}', this.participant.name);
+      console.log('\n\nParticipantName: {} - isPresenter: {}', this.participant.name, this.participant.isPresenter);
       this.roomService.setParticipantStream(this.participant, this.mediaElement.nativeElement);
     }
   }

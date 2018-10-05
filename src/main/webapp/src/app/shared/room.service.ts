@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
-import {Participant} from "./participant";
-import {Observable, Subject} from "rxjs";
 
-import {WebRtcPeer} from 'kurento-utils';
+import { Room } from './room';
+import { Subject, Observable } from 'rxjs';
+
+import { WebRtcPeer } from 'kurento-utils';
+import {Participant} from "./participant";
 import {ParticipantMedia} from "./participant-media";
 
 @Injectable({
@@ -12,128 +14,33 @@ export class RoomService {
 
   private ws: WebSocket;
 
-  private _roomName: string;
-
   private _me: Participant;
-  private _participantsList: Participant[];
-  private _participantsMedia: ParticipantMedia[];
-  private _myInfo$: Subject<Participant>;
+
+  private _room: Room;
+
   private _participantsList$: Subject<Participant[]>;
+  private _myInfo$: Subject<Participant>;
+
+  private _participantsMedia: ParticipantMedia[];
 
   constructor() {
-    this.initWebSocket();
-  }
-
-  register(name, roomName) {
-    this._roomName = roomName;
-    this.sendMessage({
-      id: "joinRoom",
-      name: name,
-      room: roomName
-    });
-  }
-
-  setMyStream(mediaElement) {
-    let constraints = {
-      audio : true,
-      video : {
-        mandatory : {
-          maxWidth : 320,
-          maxFrameRate : 15,
-          minFrameRate : 15
-        }
-      }
-    };
-    console.log(this._me.name + " registered in room " + this._roomName);
-
-    const onIceCandidateData = { roomService: this, name: this._me.name };
-
-    const options = {
-      localVideo: mediaElement,
-      mediaConstraints: constraints,
-      onicecandidate: onIceCandidate.bind(onIceCandidateData)
-    };
-
-    let this_ = this;
-
-    const rtcPeer = WebRtcPeer.WebRtcPeerSendonly(options,
-      function (error) {
-        if(error) {
-          return console.error(error);
-        }
-        console.info(this_._me);
-        const offerToReceiveVideoData = { roomService: this_, name: this_._me.name};
-        this.generateOffer (offerToReceiveVideo.bind(offerToReceiveVideoData));
-        this_._participantsMedia.push(new ParticipantMedia(this_._me.name, rtcPeer))
-      });
-  }
-
-  setParticipantStream(participant: Participant, nativeElement: any) {
-    console.log('\n\nsetParticipantStream: {}', participant.name);
-
-    const onIceCandidateData = {
-      roomService: this,
-      name: participant.name
-    };
-
-    const options = {
-      remoteVideo: nativeElement,
-      onicecandidate: onIceCandidate.bind(onIceCandidateData)
-    };
-
-    let this_ = this;
-
-    const rtcPeer = WebRtcPeer.WebRtcPeerRecvonly(options,
-      function (error) {
-        if (error) {
-          return console.error(error);
-        }
-
-        const offerToReceiveVideoData = { roomService: this_, name: participant.name};
-
-        this.generateOffer(offerToReceiveVideo.bind(offerToReceiveVideoData));
-        this_._participantsMedia.push(new ParticipantMedia(participant.name, rtcPeer));
-      });
-  }
-
-  get participantsList$(): Observable<Participant[]> {
-    return this._participantsList$.asObservable();
-  }
-
-  get myInfo(): Participant {
-    return this._me;
-  }
-
-  sendMessage(message) {
-    if (!this.ws || this.ws.readyState != this.ws.OPEN) {
-      this.initWebSocket();
-      console.error("Connection reopened!")
-    } else {
-      this.ws.send(JSON.stringify(message));
-    }
-  }
-
-  private initWebSocket() {
-    this.ws = new WebSocket("ws://localhost:8080/room");
-
-    this._participantsList = [];
+    this.initSocket();
+    this._participantsList$ = new Subject<Participant[]>();
+    this._myInfo$ = new Subject<Participant>();
     this._participantsMedia = [];
-    this._myInfo$ = new Subject();
-    this._participantsList$ = new Subject();
+  }
+
+  private initSocket() {
+    this.ws = new WebSocket('wss://localhost:8443/groupcall');
 
     this.ws.onopen = (event) => {
-      console.info("SOCKET OPENED");
-      console.info(event);
-    };
-
-    this.ws.onclose = (event) => {
-      console.info("SOCKET CLOSED");
-      console.info(event);
+      console.log(event);
+      console.log('Connected');
     };
 
     this.ws.onmessage = (message) => {
       const parsedMessage = JSON.parse(message.data);
-      console.info("Received message: {}", message.data);
+      console.log('Received message: ' + message.data);
 
       switch (parsedMessage.id) {
         case 'existingParticipants':
@@ -147,23 +54,115 @@ export class RoomService {
         case 'iceCandidate':
           this.addIceCandidate(parsedMessage);
           break;
-
         case 'newParticipantArrived':
           this.onNewParticipant(parsedMessage);
           break;
+        default:
+          break;
       }
-    }
+    };
   }
 
-  private onExistingParticipants(parsedMessage: any) {
-    parsedMessage.participants.forEach(participantName => {
-      this._participantsList.push(new Participant(participantName));
+  register(name, room) {
+    const message = {
+      id: 'joinRoom',
+      name: name,
+      room: room,
+    };
+
+    this._me = new Participant(name, false);
+    this._room = new Room(room);
+
+    this.sendMessage(message);
+  }
+
+  setMyStream(mediaElement) {
+    console.log('\n\nsetMyStream:' + this._me.name);
+    const constraints = {
+      audio: true,
+      video: true
+    };
+
+    const onIceCandidateData = { roomService: this, participantName: this._me.name, candidateName: this._me.name };
+
+    const options = {
+      localVideo: mediaElement,
+      mediaConstraints: constraints,
+      onicecandidate: onIceCandidate.bind(onIceCandidateData)
+    };
+    const this_ = this;
+    const rtcPeer = WebRtcPeer.WebRtcPeerSendonly(options,
+      function (error) {
+        if (error) {
+          return console.error(error);
+        }
+
+        const offerToReceiveVideoData = { roomService: this_, sender: this_._me.name, participantName: this_._me.name };
+
+        this.generateOffer(offerToReceiveVideo.bind(offerToReceiveVideoData));
+        const participantMedia = new ParticipantMedia(this_._me.name, rtcPeer);
+        this_._participantsMedia.push(participantMedia);
+      });
+  }
+
+  setParticipantStream(participant: Participant, mediaElement) {
+    console.log('\n\nsetParticipantStream: {}', participant.name);
+    const onIceCandidateData = {
+      roomService: this,
+      participantName: participant.name,
+      candidateName: this._me.name
+    };
+
+    const options = {
+      remoteVideo: mediaElement,
+      onicecandidate: onIceCandidate.bind(onIceCandidateData)
+    };
+    const this_ = this;
+    const rtcPeer = WebRtcPeer.WebRtcPeerRecvonly(options,
+      function (error) {
+        if (error) {
+          return console.error(error);
+        }
+
+        const offerToReceiveVideoData = { roomService: this_, sender: participant.name, participantName: this_._me.name };
+
+        this.generateOffer(offerToReceiveVideo.bind(offerToReceiveVideoData));
+        const participantMedia = new ParticipantMedia(participant.name, rtcPeer);
+        this_._participantsMedia.push(participantMedia);
+      });
+  }
+
+  sendMessage(message) {
+    if (!this.ws && this.ws.readyState !== this.ws.OPEN) {
+      this.initSocket();
+    }
+
+    const jsonMessage = JSON.stringify(message);
+    console.log('Sending message: ' + jsonMessage);
+    this.ws.send(jsonMessage);
+  }
+
+  public get participantsList$(): Observable<Participant[]> {
+    return this._participantsList$.asObservable();
+  }
+
+  public get myInfo(): Participant {
+    return this._me;
+  }
+
+
+  private onExistingParticipants(msg) {
+    console.log('\n\nonExistingParticipants');
+    console.log(this._me.name + ' registered in room ' + this._room.name);
+    this._me.isPresenter = msg.isPresenter;
+    msg.data.forEach((element) => {
+      const participant = new Participant(element.name, element.isPresenter);
+      this._room.participants.push(participant);
     });
-    this._me = new Participant(parsedMessage.participantInfo.name);
-    this._participantsList.push(this._me);
-    console.log(this._participantsList);
+    this._room.participants.push(this._me);
+
+    this._participantsList$.next(this._room.participants);
     this._myInfo$.next(this._me);
-    this._participantsList$.next(this._participantsList);
   }
 
   private receiveVideoResponse(data) {
@@ -178,17 +177,17 @@ export class RoomService {
         }
       });
     } else {
-      console.error('Media not found1!');
+      console.error('Media not found!');
     }
   }
 
-  private addIceCandidate(parsedMessage: any) {
-    console.log('\n\naddIceCandidate: {}', parsedMessage.name);
+  private addIceCandidate(data) {
+    console.log('\n\naddIceCandidate');
 
-    const participant = this.getParticipantMedia(parsedMessage.name);
+    const media = this.getParticipantMedia(data.name);
 
-    if (participant) {
-      participant.rtcPeer.addIceCandidate(parsedMessage.candidate, function (error) {
+    if (media) {
+      media.rtcPeer.addIceCandidate(data.candidate, function (error) {
         if (error) {
           console.error('Error adding candidate: ' + error);
           return;
@@ -202,15 +201,12 @@ export class RoomService {
   private onNewParticipant(data) {
     console.log('\n\nonNewParticipant');
 
-    const participant = new Participant(data.name);
-    this._participantsList.push(participant);
-    this._participantsList$.next(this._participantsList);
+    const participant = new Participant(data.name, data.isPresenter);
+    this._room.participants.push(participant);
+    this._participantsList$.next(this._room.participants);
   }
 
   private getParticipantMedia(name: string): ParticipantMedia {
-
-    console.info("Searching for: {}", name);
-    console.info("Participants: {}", this._participantsList);
 
     for (let index = 0; index < this._participantsMedia.length; index++) {
       const element = this._participantsMedia[index];
@@ -223,26 +219,28 @@ export class RoomService {
   }
 }
 
-function onIceCandidate(this: { roomService: RoomService, name: string }, candidate, wp) {
-  // console.log('Local candidate' + JSON.stringify(candidate));
+function onIceCandidate(this: { roomService: RoomService, candidateName: string, participantName: string }, candidate, wp) {
+  console.log('Local candidate' + JSON.stringify(candidate));
 
   const message = {
     id: 'onIceCandidate',
     candidate: candidate,
-    name: this.name
+    candidateName: this.participantName,
+    participantName: this.participantName
   };
   this.roomService.sendMessage(message);
 }
 
-function offerToReceiveVideo(this: { roomService: RoomService, name: string}, error, offerSdp, wp) {
+function offerToReceiveVideo(this: { roomService: RoomService, sender: string, participantName: string }, error, offerSdp, wp) {
   if (error) {
     return console.error('sdp offer error');
   }
-  // console.log('Invoking SDP offer callback function');
+  console.log('Invoking SDP offer callback function');
   const msg = {
-    id : "receiveVideoFrom",
-    sender : this.name,
-    sdpOffer : offerSdp
+    id: 'receiveVideoFrom',
+    sender: this.sender,
+    participantName: this.participantName,
+    sdpOffer: offerSdp
   };
   this.roomService.sendMessage(msg);
 }

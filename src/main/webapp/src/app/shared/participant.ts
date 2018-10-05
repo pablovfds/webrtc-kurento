@@ -1,26 +1,25 @@
 export class Participant {
   private _name: string;
-  private _rtcPeer: any;
+  private _isPresenter: boolean;
 
-  constructor(name: string) {
+  constructor(name: string, isPresenter: boolean) {
     this.name = name;
+    this.isPresenter = isPresenter;
   }
 
+  public set name(v: string) {
+    this._name = v;
+  }
 
-  get name(): string {
+  public get name(): string {
     return this._name;
   }
 
-  set name(value: string) {
-    this._name = value;
+  public set isPresenter(v: boolean) {
+    this._isPresenter = v;
   }
 
-
-  get rtcPeer(): any {
-    return this._rtcPeer;
-  }
-
-  set rtcPeer(value: any) {
-    this._rtcPeer = value;
+  public get isPresenter(): boolean {
+    return this._isPresenter;
   }
 }

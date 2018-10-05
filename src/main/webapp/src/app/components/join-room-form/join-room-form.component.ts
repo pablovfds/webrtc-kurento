@@ -6,20 +6,16 @@ import {RoomService} from "../../shared/room.service";
   templateUrl: './join-room-form.component.html',
   styleUrls: ['./join-room-form.component.css']
 })
-export class JoinRoomFormComponent implements OnInit {
+export class JoinRoomFormComponent {
 
   model = {
     name: '',
     roomName: ''
-  }
+  };
 
   constructor(private roomService: RoomService) { }
 
-  ngOnInit() {
-  }
-
   onSubmit() {
-    console.log(this.model)
     this.roomService.register(this.model.name, this.model.roomName);
   }
 
