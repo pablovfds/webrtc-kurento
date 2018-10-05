@@ -27,14 +27,26 @@ public class Room implements Closeable {
     private final ConcurrentMap<String, UserSession> participants = new ConcurrentHashMap<>();
     private final MediaPipeline pipeline;
     private final String name;
+    private final String creator;
+    private final String owner;
 
     public String getName() {
         return name;
     }
 
-    public Room(String roomName, MediaPipeline pipeline) {
+    public String getCreator() {
+        return creator;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public Room(String roomName, String creator, String owner, MediaPipeline pipeline) {
         this.name = roomName;
         this.pipeline = pipeline;
+        this.creator = creator;
+        this.owner = owner;
         log.info("ROOM {} has been created", roomName);
     }
 
@@ -45,6 +57,7 @@ public class Room implements Closeable {
 
     public UserSession join(String userName, WebSocketSession session) throws IOException {
         log.info("ROOM {}: adding participant {}", userName, userName);
+
         final UserSession participant = new UserSession(userName, this.name, session, this.pipeline);
         joinRoom(participant);
         participants.put(participant.getName(), participant);
@@ -62,6 +75,7 @@ public class Room implements Closeable {
         final JsonObject newParticipantMsg = new JsonObject();
         newParticipantMsg.addProperty("id", "newParticipantArrived");
         newParticipantMsg.addProperty("name", newParticipant.getName());
+        newParticipantMsg.addProperty("isPresenter", newParticipant.getName().equals(owner));
 
         final List<String> participantsList = new ArrayList<>(participants.values().size());
         log.debug("ROOM {}: notifying other participants of new participant {}", name,
@@ -79,7 +93,7 @@ public class Room implements Closeable {
         return participantsList;
     }
 
-    private void removeParticipant(String name) throws IOException {
+    private void removeParticipant(String name) {
         participants.remove(name);
 
         log.debug("ROOM {}: notifying all users that {} is leaving the room", this.name, name);
@@ -109,19 +123,17 @@ public class Room implements Closeable {
         final JsonArray participantsArray = new JsonArray();
         for (final UserSession participant : this.getParticipants()) {
             if (!participant.equals(user)) {
-                final JsonElement participantName = new JsonPrimitive(participant.getName());
-                participantsArray.add(participantName);
+                final JsonObject participantObj = new JsonObject();
+                participantObj.addProperty("name", participant.getName());
+                participantObj.addProperty("isPresenter", participant.getName().equals(owner));
+                participantsArray.add(participantObj);
             }
         }
 
-        final JsonObject myInfo = new JsonObject();
-        myInfo.addProperty("name", user.getName());
-
         final JsonObject existingParticipantsMsg = new JsonObject();
         existingParticipantsMsg.addProperty("id", "existingParticipants");
-
-        existingParticipantsMsg.add("participants", participantsArray);
-        existingParticipantsMsg.add("participantInfo", myInfo);
+        existingParticipantsMsg.addProperty("isPresenter", user.getName().equals(owner));
+        existingParticipantsMsg.add("data", participantsArray);
         log.debug("PARTICIPANT {}: sending a list of {} participants", user.getName(),
                 participantsArray.size());
         user.sendMessage(existingParticipantsMsg);
@@ -163,5 +175,4 @@ public class Room implements Closeable {
 
         log.debug("Room {} closed", this.name);
     }
-
 }

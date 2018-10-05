@@ -24,11 +24,11 @@ public class UserSession implements Closeable {
     private static final Logger log = LoggerFactory.getLogger(UserSession.class);
 
     private final String name;
-    private final WebSocketSession session;
+    private WebSocketSession session;
 
     private final MediaPipeline pipeline;
 
-    private final String roomName;
+    private String roomName;
     private final WebRtcEndpoint outgoingMedia;
     private final ConcurrentMap<String, WebRtcEndpoint> incomingMedia = new ConcurrentHashMap<>();
 
@@ -41,21 +41,17 @@ public class UserSession implements Closeable {
         this.roomName = roomName;
         this.outgoingMedia = new WebRtcEndpoint.Builder(pipeline).build();
 
-        this.outgoingMedia.addIceCandidateFoundListener(new EventListener<IceCandidateFoundEvent>() {
-
-            @Override
-            public void onEvent(IceCandidateFoundEvent event) {
-                JsonObject response = new JsonObject();
-                response.addProperty("id", "iceCandidate");
-                response.addProperty("name", name);
-                response.add("candidate", JsonUtils.toJsonObject(event.getCandidate()));
-                try {
-                    synchronized (session) {
-                        session.sendMessage(new TextMessage(response.toString()));
-                    }
-                } catch (IOException e) {
-                    log.debug(e.getMessage());
+        this.outgoingMedia.addIceCandidateFoundListener(event -> {
+            JsonObject response = new JsonObject();
+            response.addProperty("id", "iceCandidate");
+            response.addProperty("name", name);
+            response.add("candidate", JsonUtils.toJsonObject(event.getCandidate()));
+            try {
+                synchronized (session) {
+                    session.sendMessage(new TextMessage(response.toString()));
                 }
+            } catch (IOException e) {
+                log.debug(e.getMessage());
             }
         });
     }
@@ -72,6 +68,10 @@ public class UserSession implements Closeable {
         return session;
     }
 
+    public void setSession(WebSocketSession session) {
+        this.session = session;
+    }
+
     /**
      * The room to which the user is currently attending.
      *
@@ -79,6 +79,10 @@ public class UserSession implements Closeable {
      */
     public String getRoomName() {
         return this.roomName;
+    }
+
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
     }
 
     public void receiveVideoFrom(UserSession sender, String sdpOffer) throws IOException {
@@ -111,21 +115,17 @@ public class UserSession implements Closeable {
             log.debug("PARTICIPANT {}: creating new endpoint for {}", this.name, sender.getName());
             incoming = new WebRtcEndpoint.Builder(pipeline).build();
 
-            incoming.addIceCandidateFoundListener(new EventListener<IceCandidateFoundEvent>() {
-
-                @Override
-                public void onEvent(IceCandidateFoundEvent event) {
-                    JsonObject response = new JsonObject();
-                    response.addProperty("id", "iceCandidate");
-                    response.addProperty("name", sender.getName());
-                    response.add("candidate", JsonUtils.toJsonObject(event.getCandidate()));
-                    try {
-                        synchronized (session) {
-                            session.sendMessage(new TextMessage(response.toString()));
-                        }
-                    } catch (IOException e) {
-                        log.debug(e.getMessage());
+            incoming.addIceCandidateFoundListener(event -> {
+                JsonObject response = new JsonObject();
+                response.addProperty("id", "iceCandidate");
+                response.addProperty("name", sender.getName());
+                response.add("candidate", JsonUtils.toJsonObject(event.getCandidate()));
+                try {
+                    synchronized (session) {
+                        session.sendMessage(new TextMessage(response.toString()));
                     }
+                } catch (IOException e) {
+                    log.debug(e.getMessage());
                 }
             });
 

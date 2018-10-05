@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {Component} from '@angular/core';
 import {RoomService} from "../../shared/room/room.service";
 
 @Component({
