@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import {Participant} from "./shared/participant";
+import {RoomService} from "./shared/room.service";
 
 @Component({
   selector: 'app-root',
@@ -6,5 +8,7 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'webapp';
+  participants: Participant[];
+
+  constructor(private roomService: RoomService) {}
 }

@@ -9,6 +9,7 @@ import {FormsModule} from "@angular/forms";
     FormsModule
   ],
   declarations: [],
-  providers: [RoomService]
+  providers: [RoomService],
+  exports: [FormsModule]
 })
 export class SharedModule { }

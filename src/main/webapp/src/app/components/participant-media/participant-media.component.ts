@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
+import {Participant} from "../../shared/participant";
 
 @Component({
   selector: 'app-participant-media',
@@ -6,6 +7,8 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./participant-media.component.css']
 })
 export class ParticipantMediaComponent implements OnInit {
+
+  @Input() participant: Participant;
 
   constructor() { }
 

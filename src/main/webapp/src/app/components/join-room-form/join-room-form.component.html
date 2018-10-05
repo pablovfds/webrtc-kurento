@@ -1,0 +1,19 @@
+<div class="login-page">
+  <div class="form">
+    <form class="login-form" (ngSubmit)="onSubmit()" #joinRoomForm="ngForm">
+      <div class="form-group">
+      <input type="text" class="form-control" id="name"
+             placeholder="Participant name"
+             required
+             [(ngModel)]="model.name" name="name">
+      </div>
+      <div class="form-group">
+      <input type="text" class="form-control" id="roomName"
+             placeholder="Room name"
+             required
+             [(ngModel)]="model.roomName" name="name">
+      </div>
+      <button type="submit">Joint</button>
+    </form>
+  </div>
+</div>
