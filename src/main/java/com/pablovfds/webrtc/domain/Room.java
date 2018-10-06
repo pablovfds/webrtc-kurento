@@ -16,7 +16,7 @@ public class Room {
     private String name;
 
     @DBRef
-    private Set<Participant> participants = new HashSet<>();
+    private Set<User> participants = new HashSet<>();
 
     public Room(String id, String name) {
         this.id = id;
@@ -39,11 +39,11 @@ public class Room {
         this.name = name;
     }
 
-    public Set<Participant> getParticipants() {
+    public Set<User> getParticipants() {
         return participants;
     }
 
-    public void setParticipants(Set<Participant> participants) {
+    public void setParticipants(Set<User> participants) {
         this.participants = participants;
     }
 }

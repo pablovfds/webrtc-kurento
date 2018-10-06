@@ -4,14 +4,14 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document
-public class Participant {
+public class User {
 
     @Id
     private String username;
 
     private String name;
 
-    public Participant(String username, String name) {
+    public User(String username, String name) {
         this.username = username;
         this.name = name;
     }
