@@ -4,6 +4,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,16 +13,23 @@ import java.util.Set;
 public class Room {
 
     @Id
+    @Size(max=4, min=4)
     private String id;
 
     private String name;
 
+    private User owner;
+
+    private User creator;
+
     @DBRef
     private Set<User> participants = new HashSet<>();
 
-    public Room(String id, String name) {
+    public Room(@Size(max = 4, min = 4) String id, String name, User owner, User creator) {
         this.id = id;
         this.name = name;
+        this.owner = owner;
+        this.creator = creator;
     }
 
     public String getId() {
@@ -45,5 +54,21 @@ public class Room {
 
     public void setParticipants(Set<User> participants) {
         this.participants = participants;
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
+    }
+
+    public User getCreator() {
+        return creator;
+    }
+
+    public void setCreator(User creator) {
+        this.creator = creator;
     }
 }
