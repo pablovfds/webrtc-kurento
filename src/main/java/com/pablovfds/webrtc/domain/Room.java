@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.constraints.Max;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,8 +19,10 @@ public class Room {
 
     private String name;
 
+    @NotNull
     private User owner;
 
+    @NotNull
     private User creator;
 
     @DBRef

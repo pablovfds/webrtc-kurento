@@ -2,6 +2,7 @@ package com.pablovfds.webrtc.service;
 
 import com.google.gson.JsonObject;
 import com.pablovfds.webrtc.domain.MessageConstants;
+import com.pablovfds.webrtc.utils.MessageSender;
 import org.kurento.client.Continuation;
 import org.kurento.client.IceCandidate;
 import org.kurento.client.MediaPipeline;
@@ -9,7 +10,7 @@ import org.kurento.client.WebRtcEndpoint;
 import org.kurento.jsonrpc.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.socket.TextMessage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.Closeable;
@@ -31,6 +32,9 @@ public class UserKMS implements Closeable {
 
     private final ConcurrentMap<String, WebRtcEndpoint> incomingMedia = new ConcurrentHashMap<>();
 
+    @Autowired
+    private MessageSender messageSender;
+
     public UserKMS(final WebSocketSession session, MediaPipeline pipeline) {
         this.pipeline = pipeline;
         this.session = session;
@@ -39,15 +43,9 @@ public class UserKMS implements Closeable {
         this.outgoingMedia.addIceCandidateFoundListener(event -> {
             JsonObject response = new JsonObject();
             response.addProperty(MessageConstants.ID, MessageConstants.ICE_CANDIDATE);
-            response.addProperty("name", username);
+            response.addProperty(MessageConstants.NAME, username);
             response.add(MessageConstants.CANDIDATE, JsonUtils.toJsonObject(event.getCandidate()));
-            try {
-                synchronized (session) {
-                    session.sendMessage(new TextMessage(response.toString()));
-                }
-            } catch (IOException e) {
-                log.debug(e.getMessage());
-            }
+            this.messageSender.sendMessage(this, response);
         });
     }
 
@@ -86,12 +84,12 @@ public class UserKMS implements Closeable {
 
         final String ipSdpAnswer = this.getEndpointForUser(sender).processOffer(sdpOffer);
         final JsonObject scParams = new JsonObject();
-        scParams.addProperty("id", "receiveVideoAnswer");
-        scParams.addProperty("name", sender.getUsername());
-        scParams.addProperty("sdpAnswer", ipSdpAnswer);
+        scParams.addProperty(MessageConstants.ID, MessageConstants.RECEIVE_VIDEO_ANSWER);
+        scParams.addProperty(MessageConstants.NAME, sender.getUsername());
+        scParams.addProperty(MessageConstants.SDP_ANSWER, ipSdpAnswer);
 
         log.trace("USER {}: SdpAnswer for {} is {}", this.username, sender.getUsername(), ipSdpAnswer);
-        this.sendMessage(scParams);
+        this.messageSender.sendMessage(this, scParams);
         log.debug("gather candidates");
         this.getEndpointForUser(sender).gatherCandidates();
     }
@@ -112,15 +110,9 @@ public class UserKMS implements Closeable {
             incoming.addIceCandidateFoundListener(event -> {
                 JsonObject response = new JsonObject();
                 response.addProperty(MessageConstants.ID, MessageConstants.ICE_CANDIDATE);
-                response.addProperty("name", sender.getUsername());
+                response.addProperty(MessageConstants.NAME, sender.getUsername());
                 response.add(MessageConstants.CANDIDATE, JsonUtils.toJsonObject(event.getCandidate()));
-                try {
-                    synchronized (session) {
-                        session.sendMessage(new TextMessage(response.toString()));
-                    }
-                } catch (IOException e) {
-                    log.debug(e.getMessage());
-                }
+                this.messageSender.sendMessage(this, response);
             });
 
             incomingMedia.put(sender.getUsername(), incoming);
@@ -153,13 +145,6 @@ public class UserKMS implements Closeable {
     @Override
     public void close() throws IOException {
 
-    }
-
-    public void sendMessage(JsonObject message) throws IOException {
-        log.debug("USER {}: Sending message {}", username, message);
-        synchronized (session) {
-            session.sendMessage(new TextMessage(message.toString()));
-        }
     }
 
     public void addCandidate(IceCandidate candidate, String name) {

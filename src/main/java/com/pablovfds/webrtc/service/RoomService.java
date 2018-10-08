@@ -54,11 +54,11 @@ public class RoomService {
 
         Room room = new Room(id, roomDTO.getName(), optionalOwner.get(), optionalCreator.get());
 
-        RoomKMS roomKMS = new RoomKMS(this.kurento.createMediaPipeline());
+        RoomKMS roomKMS = new RoomKMS(id, this.kurento.createMediaPipeline());
 
         room = this.roomRepository.save(room);
 
-        this.rooms.put(room.getId(), roomKMS);
+        this.rooms.put(id, roomKMS);
 
         return new RoomDTO(room);
     }
